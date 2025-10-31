@@ -6,7 +6,7 @@ on:
       - "build.zig"
   pull_request:
     branches:
-      - main
+      - master
     paths:
       - "src/**"
       - "build.zig"
