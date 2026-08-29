@@ -5,7 +5,7 @@ Allocation-free glob matching for byte strings in pure Zig.
 [Reference docs](https://xcaeser.github.io/glob.zig)
 
 [![Tests](https://github.com/xcaeser/glob.zig/actions/workflows/main.yml/badge.svg)](https://github.com/xcaeser/glob.zig/actions/workflows/main.yml)
-[![Zig Version](https://img.shields.io/badge/Zig-0.17.0--dev-orange.svg?logo=zig)](build.zig.zon)
+[![Zig Version](https://img.shields.io/badge/Zig-0.17.0-orange.svg?logo=zig)](build.zig.zon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/glob-v0.2.0-green)](https://github.com/xcaeser/glob.zig/releases)
 
@@ -70,15 +70,15 @@ pub fn main() !void {
 
 ## Pattern syntax
 
-| Pattern | Meaning |
-| --- | --- |
-| `*` | Zero or more bytes |
-| `?` | Exactly one byte |
-| `[abc]` | One byte in the set |
-| `[a-z]` | One byte in the inclusive range |
-| `[!abc]`, `[^abc]` | One byte outside the set |
-| `\*`, `\?`, `\[` | Escaped literal byte |
-| `!pattern` | Negate the whole pattern |
+| Pattern            | Meaning                         |
+| ------------------ | ------------------------------- |
+| `*`                | Zero or more bytes              |
+| `?`                | Exactly one byte                |
+| `[abc]`            | One byte in the set             |
+| `[a-z]`            | One byte in the inclusive range |
+| `[!abc]`, `[^abc]` | One byte outside the set        |
+| `\*`, `\?`, `\[`   | Escaped literal byte            |
+| `!pattern`         | Negate the whole pattern        |
 
 `-` is literal at either edge of a class or when escaped. Invalid patterns
 return `false` from `match`; `matchWithOptions` reports `UnclosedBracket`,
