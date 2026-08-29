@@ -4,7 +4,7 @@ Thank you for considering contributing to glob.zig!
 
 ## Getting Started
 
-1. **Fork the repository** and create your branch from `main`.
+1. **Fork the repository** and create your branch from `master`.
 2. **Write clear, concise code** following the existing style.
 3. **Add or update tests** as needed.
 4. **Open a Pull Request** with a detailed description.
@@ -18,9 +18,7 @@ Thank you for considering contributing to glob.zig!
 ## Development Setup
 
 ```bash
-# Run tests
+zig fmt --check .
 zig build test
-
-# Build the library
-zig build
+zig build docs
 ```

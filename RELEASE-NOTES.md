@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.2.0
+
+- Replaced recursive `*` matching with a constant-stack implementation
+- Added negated and escaped character classes
+- Added pathname, leading-period, no-escape, and ASCII case-insensitive options
+- Made configurable matching report precise validation errors
+- Reduced the public API to `match`, `matchWithOptions`, `validate`, `matchAny`, and `matchAll`
+
 ## v0.1.0 (Initial Release)
 
 - Initial implementation of glob pattern matching

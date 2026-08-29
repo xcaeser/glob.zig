@@ -1,8 +1,8 @@
 .{
     .name = .glob,
-    .version = "0.1.0",
+    .version = "0.2.0",
     .fingerprint = 0x87a155fe74aa2903,
-    .minimum_zig_version = "0.16.0-dev.923+06d9e3bc0",
+    .minimum_zig_version = "0.17.0-dev.1893+78e3b1c73",
     .dependencies = .{},
     .paths = .{
         "build.zig",

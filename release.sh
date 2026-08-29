@@ -1,12 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Usage: ./release.sh 1.0.0
-set -e
+set -euo pipefail
 
-VERSION=$1
+VERSION=${1:-}
 NOTES_FILE="RELEASE-NOTES.md"
 
-if [ -z "$VERSION" ]; then
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
   echo "Usage: $0 <version>"
   exit 1
 fi
@@ -16,18 +16,33 @@ if [ ! -f "$NOTES_FILE" ]; then
   exit 1
 fi
 
-# Optional: commit if there are changes
-if ! git diff-index --quiet HEAD --; then
-  git add .
-  git commit -m "Release v$VERSION"
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Working tree must be clean before a release."
+  exit 1
 fi
 
-# Tag and push
-git tag -a "v$VERSION" -m "Version $VERSION"
-git push origin master
-git push origin "v$VERSION"
+if ! grep -Fq ".version = \"$VERSION\"," build.zig.zon; then
+  echo "build.zig.zon version does not match $VERSION."
+  exit 1
+fi
 
-# Create GitHub release with notes from file
+if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+  echo "Tag v$VERSION already exists."
+  exit 1
+fi
+
+command -v gh >/dev/null || { echo "GitHub CLI (gh) is required."; exit 1; }
+zig build test --summary all
+
+BRANCH=$(git branch --show-current)
+if [[ -z "$BRANCH" ]]; then
+  echo "Releases require a checked-out branch."
+  exit 1
+fi
+
+git tag -a "v$VERSION" -m "Version $VERSION"
+git push origin "$BRANCH" "v$VERSION"
+
 gh release create "v$VERSION" \
   --title "v$VERSION" \
   --notes-file "$NOTES_FILE"

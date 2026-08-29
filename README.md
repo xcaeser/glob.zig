@@ -1,95 +1,110 @@
-# 📂 glob.zig - a powerful glob matcher
+# glob.zig
 
-Fast and reliable glob pattern matching in pure zig.
+Allocation-free glob matching for byte strings in pure Zig.
 
-[glob.zig reference docs](https://xcaeser.github.io/glob.zig)
+[Reference docs](https://xcaeser.github.io/glob.zig)
 
 [![Tests](https://github.com/xcaeser/glob.zig/actions/workflows/main.yml/badge.svg)](https://github.com/xcaeser/glob.zig/actions/workflows/main.yml)
-[![Zig Version](https://img.shields.io/badge/Zig_Version-0.16.0--dev-orange.svg?logo=zig)](README.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey.svg?logo=cachet)](LICENSE)
-[![Built by xcaeser](https://img.shields.io/badge/Built%20by-@xcaeser-blue)](https://github.com/xcaeser)
-[![Version](https://img.shields.io/badge/glob-v0.1.0-green)](https://github.com/xcaeser/glob.zig/releases)
+[![Zig Version](https://img.shields.io/badge/Zig-0.17.0--dev-orange.svg?logo=zig)](build.zig.zon)
+[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/glob-v0.2.0-green)](https://github.com/xcaeser/glob.zig/releases)
 
-## 🚀 Features
+## Features
 
-- Fast glob pattern matching with `*`, `?`, and character classes `[abc]`, `[a-z]`
-- Negation support with `!` prefix
-- Pattern validation for common errors
-- Multiple pattern matching (`matchAny`, `matchAll`)
-- No dependencies, pure Zig
-- Comprehensive test suite
+- `*`, `?`, sets (`[abc]`), ranges (`[a-z]`), and negated sets (`[!abc]`, `[^abc]`)
+- Backslash escaping and whole-pattern negation with a leading `!`
+- Optional pathname, leading-period, no-escape, and ASCII case-insensitive behavior
+- Configurable matching reports malformed patterns
+- Constant stack use, no allocation, and no dependencies
+- Multiple-pattern helpers: `matchAny` and `matchAll`
 
-## 📦 Installation
+Matching is byte-oriented. `?` consumes one byte, not one Unicode scalar.
+
+## Installation
 
 ```sh
-zig fetch --save=glob https://github.com/xcaeser/glob.zig/archive/v0.1.0.tar.gz
+zig fetch --save=glob https://github.com/xcaeser/glob.zig/archive/v0.2.0.tar.gz
 ```
 
-Add to your `build.zig`:
+Add the module to your executable or library:
 
 ```zig
 const glob_dep = b.dependency("glob", .{ .target = target, .optimize = optimize });
 exe.root_module.addImport("glob", glob_dep.module("glob"));
 ```
 
-## 🧪 Example
+## Usage
 
 ```zig
 const std = @import("std");
 const glob = @import("glob");
 
 pub fn main() !void {
-    // Simple match
-    const matches = glob.match("*.zig", "main.zig");
-    std.debug.print("Matches: {}\n", .{matches}); // true
+    std.debug.assert(glob.match("src/*.zig", "src/main.zig"));
+    std.debug.assert(glob.match("file[0-9].txt", "file7.txt"));
+    std.debug.assert(glob.match("!*.tmp", "notes.txt"));
+    std.debug.assert(glob.matchAll(&.{ "*.txt", "!test_*" }, "notes.txt"));
 
-    // Character class
-    const class_match = glob.match("test_[0-9].txt", "test_5.txt");
-    std.debug.print("Class match: {}\n", .{class_match}); // true
+    const path = try glob.matchWithOptions("src/*.zig", "src/lib/main.zig", .{
+        .pathname = true,
+    });
+    std.debug.assert(!path); // * cannot cross /
 
-    // Negation
-    const negated = glob.match("!*.tmp", "file.txt");
-    std.debug.print("Negated: {}\n", .{negated}); // true
+    const readme = try glob.matchWithOptions("README.*", "readme.md", .{
+        .case_sensitivity = .insensitive_ascii,
+    });
+    std.debug.assert(readme);
 
-    // Multiple patterns
-    const patterns = &[_][]const u8{ "*.zig", "*.c", "*.h" };
-    const multi = glob.matchAny(patterns, "main.zig");
-    std.debug.print("Any match: {}\n", .{multi}); // true
-
-    // Validate pattern
-    glob.validate("[a-z]*") catch |err| {
-        std.debug.print("Invalid pattern: {}\n", .{err});
-        return;
-    };
+    try glob.validate("[a-z]*");
 }
 ```
 
-## 📚 API
+## API
 
-### `match(pattern: []const u8, text: []const u8) bool`
+- `match(pattern, text) bool` — the default. Malformed patterns return `false`.
+- `matchWithOptions(pattern, text, options) !bool` — configurable matching;
+  malformed patterns return a `ValidationError`.
+- `validate(pattern) !void` — validate default pattern syntax without matching.
+- `matchAny(patterns, text) bool` — match at least one default-syntax pattern.
+- `matchAll(patterns, text) bool` — match every default-syntax pattern.
 
-Matches text against a glob pattern.
+## Pattern syntax
 
-Supported wildcards:
+| Pattern | Meaning |
+| --- | --- |
+| `*` | Zero or more bytes |
+| `?` | Exactly one byte |
+| `[abc]` | One byte in the set |
+| `[a-z]` | One byte in the inclusive range |
+| `[!abc]`, `[^abc]` | One byte outside the set |
+| `\*`, `\?`, `\[` | Escaped literal byte |
+| `!pattern` | Negate the whole pattern |
 
-- `*` — matches any number of characters
-- `?` — matches any single character
-- `[abc]` — matches one character from the set
-- `[a-z]` — matches one character from the range
-- `!` — negates the pattern (must be first character)
+`-` is literal at either edge of a class or when escaped. Invalid patterns
+return `false` from `match`; `matchWithOptions` reports `UnclosedBracket`,
+`EmptyBracket`, `InvalidRange`, or `TrailingBackslash`.
 
-### `validate(pattern: []const u8) !void`
+## Options
 
-Validates a pattern for syntax errors.
+`matchWithOptions` accepts:
 
-### `matchAny(patterns: []const []const u8, text: []const u8) bool`
+- `case_sensitivity = .insensitive_ascii` — fold ASCII letter case
+- `pathname = true` — wildcards and classes cannot match `/`
+- `period = true` — a leading `.` must be matched by a literal `.`; with
+  `pathname`, this also applies after `/`
+- `no_escape = true` — treat `\` as an ordinary byte
 
-Returns true if text matches any of the patterns.
+`matchAny` treats every pattern independently, including negated patterns.
+Use `matchAll(&.{ "*.txt", "!test_*" }, text)` for an include-and-exclude
+filter. The list helpers intentionally use default options; for custom options,
+loop over the patterns and call `matchWithOptions` explicitly.
 
-### `matchAll(patterns: []const []const u8, text: []const u8) bool`
+## Development
 
-Returns true if text matches all of the patterns.
+```sh
+zig fmt --check .
+zig build test --summary all
+zig build docs
+```
 
-## 📝 License
-
-MIT. See [LICENSE](LICENSE). Contributions welcome.
+MIT licensed. See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md).

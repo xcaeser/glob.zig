@@ -4,12 +4,14 @@ on:
     paths:
       - "src/**"
       - "build.zig"
+      - "build.zig.zon"
   pull_request:
     branches:
       - master
     paths:
       - "src/**"
       - "build.zig"
+      - "build.zig.zon"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,6 +21,11 @@ jobs:
 
       - name: Setup Zig Compiler
         uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0-dev.1893+78e3b1c73
 
-      - name: Build and test Glob
+      - name: Check formatting
+        run: zig fmt --check .
+
+      - name: Test
         run: zig build test --summary all
